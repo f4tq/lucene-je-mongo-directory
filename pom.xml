@@ -11,25 +11,28 @@
   <groupId>org.apache.lucene</groupId>
   <artifactId>bdb-je</artifactId>
   <packaging>jar</packaging>
-  <version>3.4.0</version>
+  <version>3.4.1</version>
+  <properties>
+	<lucene.version>3.4.0</lucene.version>
+	<sleepycat.version>4.0.92</sleepycat.version>
+    </properties>
   <dependencies>
     <dependency> 
       <!-- lucene-test-framework dependency must be declared before lucene-core -->
-      <groupId>${project.groupId}</groupId>
+      <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-test-framework</artifactId>
-      <version>${project.version}</version>
+      <version>${lucene.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>${project.groupId}</groupId>
+      <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
-      <version>${project.version}</version>
+      <version>${lucene.version}</version>
     </dependency>
     <dependency>
       <groupId>com.sleepycat</groupId>
       <artifactId>je</artifactId>
-      <version>4.0.92</version>
-      <optional>true</optional>
+      <version>${sleepycat.version}</version>
     </dependency>
   </dependencies>
 

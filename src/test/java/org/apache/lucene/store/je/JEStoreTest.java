@@ -27,6 +27,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase;
+import com.sleepycat.je.DatabaseException;
+
 
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -49,8 +51,9 @@ public class JEStoreTest extends LuceneTestCase {
     protected File dbHome = new File(TEMP_DIR,"index");
 
     protected Environment env;
-
-    protected Database index, blocks;
+    protected DatabaseConfig dbConfig;
+    protected EnvironmentConfig envConfig;
+    //    protected Database index, blocks;
 
     @Override
     public void setUp() throws Exception {
@@ -68,8 +71,8 @@ public class JEStoreTest extends LuceneTestCase {
             }
         }
 
-        EnvironmentConfig envConfig = new EnvironmentConfig();
-        DatabaseConfig dbConfig = new DatabaseConfig();
+	envConfig= new EnvironmentConfig();
+        dbConfig = new DatabaseConfig();
 
         envConfig.setTransactional(true);
         envConfig.setAllowCreate(true);
@@ -78,36 +81,21 @@ public class JEStoreTest extends LuceneTestCase {
 
         env = new Environment(dbHome, envConfig);
 
-        Transaction txn = null;
-
-        try {
-            txn = env.beginTransaction(null, null);
-            index = env.openDatabase(txn, "__index__", dbConfig);
-            blocks = env.openDatabase(txn, "__blocks__", dbConfig);
-        } catch (DatabaseException e) {
-            if (txn != null) {
-                txn.abort();
-                txn = null;
-            }
-            index = null;
-            blocks = null;
-            throw e;
-        } finally {
-            if (txn != null)
-                txn.commit();
-            txn = null;
-        }
     }
 
     @Override
     public void tearDown() throws Exception {
 
-        if (index != null)
+	/*        if (index != null)
             index.close();
         if (blocks != null)
             blocks.close();
         if (env != null)
             env.close();
+	*/
+        if (env != null)
+            env.close();
+
         super.tearDown();
     }
 
@@ -124,13 +112,14 @@ public class JEStoreTest extends LuceneTestCase {
 
         Date veryStart = new Date();
         Date start = new Date();
-        Transaction txn = env.beginTransaction(null, null);
-        Directory store = null;
+
+        JEDirectory store = null;
 
         if (VERBOSE) System.out.println("Writing files byte by byte");
 
         try {
-            store = new JEDirectory(txn, index, blocks);
+            store = new JEDirectory(env,dbConfig);
+	    store.beginTransaction();
 
             for (int i = 0; i < count; i++) {
                 String name = i + ".dat";
@@ -146,16 +135,13 @@ public class JEStoreTest extends LuceneTestCase {
 
                 file.close();
             }
-        } catch (IOException e) {
-            txn.abort();
-            txn = null;
-            throw e;
-        } finally {
-            if (txn != null)
-                txn.commit();
+	    store.commitTransaction();
 
-            store.close();
-        }
+        } catch (IOException e) {
+	    store.abortTransaction();
+        } finally{
+	    store.close();
+	}
 
         end = new Date();
 
@@ -168,8 +154,9 @@ public class JEStoreTest extends LuceneTestCase {
         }
 
         try {
-            txn = env.beginTransaction(null, null);
-            store = new JEDirectory(txn, index, blocks);
+         
+            store = new JEDirectory(env,dbConfig);
+	    store.beginTransaction();
 
             gen = new Random(seed);
             start = new Date();
@@ -192,19 +179,13 @@ public class JEStoreTest extends LuceneTestCase {
                 file.close();
             }
         } catch (IOException e) {
-            txn.abort();
-            txn = null;
-            throw e;
+            store.abortTransaction();
+	    throw e;
         } catch (DatabaseException e) {
-            if (txn != null) {
-                txn.abort();
-                txn = null;
-            }
-            throw e;
+	    store.abortTransaction();
+	    throw e;
         } finally {
-            if (txn != null)
-                txn.commit();
-
+	    store.commitTransaction();
             store.close();
         }
 
@@ -219,8 +200,8 @@ public class JEStoreTest extends LuceneTestCase {
         }
 
         try {
-            txn = env.beginTransaction(null, null);
-            store = new JEDirectory(txn, index, blocks);
+            store = new JEDirectory(env,dbConfig);
+	    store.beginTransaction();
 
             gen = new Random(seed);
             start = new Date();
@@ -230,18 +211,13 @@ public class JEStoreTest extends LuceneTestCase {
                 store.deleteFile(name);
             }
         } catch (IOException e) {
-            txn.abort();
-            txn = null;
+	    store.abortTransaction();
             throw e;
         } catch (DatabaseException e) {
-            if (txn != null) {
-                txn.abort();
-                txn = null;
-            }
+	    store.abortTransaction();
             throw e;
         } finally {
-            if (txn != null)
-                txn.commit();
+	    store.commitTransaction();
 
             store.close();
         }
@@ -270,16 +246,16 @@ public class JEStoreTest extends LuceneTestCase {
 
         Date veryStart = new Date();
         Date start = new Date();
-        Transaction txn = env.beginTransaction(null, null);
-        Directory store = null;
+
+        JEDirectory store = null;
 
         if (VERBOSE) System.out.println("Writing files byte by byte");
 
         try {
-            store = new JEDirectory(txn, index, blocks);
-
+            store = new JEDirectory(env,dbConfig);
+	    store.beginTransaction();
             for (int i = 0; i < count; i++) {
-                String name = i + ".dat";
+		String name = i + ".dat";
                 int length = gen.nextInt() & LENGTH_MASK;
                 IndexOutput file = store.createOutput(name);
 
@@ -293,13 +269,10 @@ public class JEStoreTest extends LuceneTestCase {
                 file.close();
             }
         } catch (IOException e) {
-            txn.abort();
-            txn = null;
+            store.abortTransaction();
             throw e;
         } finally {
-            if (txn != null)
-                txn.commit();
-
+	    store.commitTransaction();
             store.close();
         }
 
@@ -314,8 +287,9 @@ public class JEStoreTest extends LuceneTestCase {
         }
 
         try {
-            txn = env.beginTransaction(null, null);
-            store = new JEDirectory(txn, index, blocks);
+
+            store = new JEDirectory(env,dbConfig);
+	    store.beginTransaction();
 
             gen = new Random(seed);
             start = new Date();
@@ -327,19 +301,13 @@ public class JEStoreTest extends LuceneTestCase {
                 }
             }
         } catch (IOException e) {
-            txn.abort();
-            txn = null;
+	    store.abortTransaction();
             throw e;
         } catch (DatabaseException e) {
-            if (txn != null) {
-                txn.abort();
-                txn = null;
-            }
+	    store.abortTransaction();
             throw e;
         } finally {
-            if (txn != null)
-                txn.commit();
-
+	    store.commitTransaction();
             store.close();
         }
 
@@ -357,8 +325,8 @@ public class JEStoreTest extends LuceneTestCase {
         }
 
         try {
-            txn = env.beginTransaction(null, null);
-            store = new JEDirectory(txn, index, blocks);
+            store = new JEDirectory(env,dbConfig);
+	    store.beginTransaction();
 
             gen = new Random(seed);
             start = new Date();
@@ -387,19 +355,13 @@ public class JEStoreTest extends LuceneTestCase {
                 }
             }
         } catch (IOException e) {
-            txn.abort();
-            txn = null;
+	    store.abortTransaction();
             throw e;
         } catch (DatabaseException e) {
-            if (txn != null) {
-                txn.abort();
-                txn = null;
-            }
+	    store.abortTransaction();
             throw e;
         } finally {
-            if (txn != null)
-                txn.commit();
-
+	    store.commitTransaction();
             store.close();
         }
 
@@ -414,8 +376,8 @@ public class JEStoreTest extends LuceneTestCase {
         }
 
         try {
-            txn = env.beginTransaction(null, null);
-            store = new JEDirectory(txn, index, blocks);
+            store = new JEDirectory(env,dbConfig);
+	    store.beginTransaction();
 
             gen = new Random(seed);
             start = new Date();
@@ -428,19 +390,13 @@ public class JEStoreTest extends LuceneTestCase {
             }
 
         } catch (IOException e) {
-            txn.abort();
-            txn = null;
+	    store.abortTransaction();
             throw e;
         } catch (DatabaseException e) {
-            if (txn != null) {
-                txn.abort();
-                txn = null;
-            }
+	    store.abortTransaction();
             throw e;
         } finally {
-            if (txn != null)
-                txn.commit();
-
+	    store.commitTransaction();
             store.close();
         }
 
@@ -456,37 +412,45 @@ public class JEStoreTest extends LuceneTestCase {
 
         Cursor cursor = null;
         try {
-            cursor = index.openCursor(null, null);
+            store = new JEDirectory(env,dbConfig);
 
-            DatabaseEntry foundKey = new DatabaseEntry();
-            DatabaseEntry foundData = new DatabaseEntry();
+	    try {
+		cursor = store.getIndex().openCursor(null, null);
+		
+		DatabaseEntry foundKey = new DatabaseEntry();
+		DatabaseEntry foundData = new DatabaseEntry();
+		
+		if (cursor.getNext(foundKey, foundData, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+		    fail("index database is not empty");
+		}
+	    } catch (DatabaseException e) {
+		throw e;
+	    } finally {
+		if (cursor != null)
+		    cursor.close();
+	    }
 
-            if (cursor.getNext(foundKey, foundData, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-                fail("index database is not empty");
-            }
-        } catch (DatabaseException e) {
-            throw e;
-        } finally {
-            if (cursor != null)
-                cursor.close();
-        }
+	    cursor = null;
+	    try {
+		cursor = store.getBlocks().openCursor(null, null);
 
-        cursor = null;
-        try {
-            cursor = blocks.openCursor(null, null);
-
-            DatabaseEntry foundKey = new DatabaseEntry();
-            DatabaseEntry foundData = new DatabaseEntry();
-
-            if (cursor.getNext(foundKey, foundData, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-                fail("blocks database is not empty");
-            }
-        } catch (DatabaseException e) {
-            throw e;
-        } finally {
-            if (cursor != null)
-                cursor.close();
-        }
+		DatabaseEntry foundKey = new DatabaseEntry();
+		DatabaseEntry foundData = new DatabaseEntry();
+		
+		if (cursor.getNext(foundKey, foundData, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+		    fail("blocks database is not empty");
+		}
+	    } catch (DatabaseException e) {
+		throw e;
+	    } finally {
+		if (cursor != null)
+		    cursor.close();
+	    }
+	} catch (DatabaseException e) {
+	    throw e;
+	} finally {
+	    store.close();
+	}
     }
 
     public void testArrays() throws Exception {
@@ -502,13 +466,14 @@ public class JEStoreTest extends LuceneTestCase {
 
         Date veryStart = new Date();
         Date start = new Date();
-        Transaction txn = env.beginTransaction(null, null);
-        Directory store = null;
+
+        JEDirectory store = null;
 
         if (VERBOSE) System.out.println("Writing files as one byte array");
 
         try {
-            store = new JEDirectory(txn, index, blocks);
+            store = new JEDirectory(env,dbConfig);
+	    store.beginTransaction();
 
             for (int i = 0; i < count; i++) {
                 String name = i + ".dat";
@@ -523,12 +488,11 @@ public class JEStoreTest extends LuceneTestCase {
                 file.close();
             }
         } catch (IOException e) {
-            txn.abort();
-            txn = null;
+	    store.abortTransaction();
             throw e;
         } finally {
-            if (txn != null)
-                txn.commit();
+	    store.commitTransaction();
+
 
             store.close();
         }
@@ -544,8 +508,9 @@ public class JEStoreTest extends LuceneTestCase {
         }
 
         try {
-            txn = env.beginTransaction(null, null);
-            store = new JEDirectory(txn, index, blocks);
+
+            store = new JEDirectory(env,dbConfig);
+	    store.beginTransaction();
 
             gen = new Random(seed);
             start = new Date();
@@ -569,19 +534,13 @@ public class JEStoreTest extends LuceneTestCase {
                 file.close();
             }
         } catch (IOException e) {
-            txn.abort();
-            txn = null;
+	    store.abortTransaction();
             throw e;
         } catch (DatabaseException e) {
-            if (txn != null) {
-                txn.abort();
-                txn = null;
-            }
+	    store.abortTransaction();
             throw e;
         } finally {
-            if (txn != null)
-                txn.commit();
-
+	    store.commitTransaction();
             store.close();
         }
 
@@ -596,8 +555,9 @@ public class JEStoreTest extends LuceneTestCase {
         }
 
         try {
-            txn = env.beginTransaction(null, null);
-            store = new JEDirectory(txn, index, blocks);
+
+            store = new JEDirectory(env,dbConfig);
+	    store.beginTransaction();
 
             gen = new Random(seed);
             start = new Date();
@@ -607,19 +567,13 @@ public class JEStoreTest extends LuceneTestCase {
             }
 
         } catch (IOException e) {
-            txn.abort();
-            txn = null;
+	    store.abortTransaction();
             throw e;
         } catch (DatabaseException e) {
-            if (txn != null) {
-                txn.abort();
-                txn = null;
-            }
+	    store.abortTransaction();
             throw e;
         } finally {
-            if (txn != null)
-                txn.commit();
-
+	    store.commitTransaction();
             store.close();
         }
 

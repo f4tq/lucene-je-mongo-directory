@@ -33,12 +33,16 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 
+import com.sleepycat.je.Environment;
+import com.sleepycat.je.DatabaseConfig;
+
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
+import java.io.IOException;
 
 /**
  * Port of Andi Vajda's DbDirectory to to Java Edition of Berkeley Database
@@ -53,6 +57,9 @@ import com.sleepycat.je.Transaction;
 public class JEDirectory extends Directory {
 
     protected Set<JEIndexOutput> openFiles = Collections.synchronizedSet(new HashSet<JEIndexOutput>());
+
+    protected Environment env;
+    protected DatabaseConfig dbConfig;
 
     protected Database files, blocks;
 
@@ -76,7 +83,7 @@ public class JEDirectory extends Directory {
      *            flags used for db read operations.
      */
 
-    public JEDirectory(Transaction txn, Database files, Database blocks,
+    protected JEDirectory(Transaction txn, Database files, Database blocks,
                        int flags) {
         super();
 
@@ -86,13 +93,22 @@ public class JEDirectory extends Directory {
         this.flags = flags;
     }
 
-    public JEDirectory(Transaction txn, Database files, Database blocks) {
+    protected JEDirectory(Transaction txn, Database files, Database blocks) {
         this(txn, files, blocks, 0);
     }
 
     @Override
     public void close() throws IOException {
         flush();
+	if (txn != null)
+	    {
+		System.err.println("WARNING: JEDirectory.close -- auto commiting open transaction!");
+		abortTransaction();
+	    }
+	if (files != null)
+            files.close();
+        if (blocks != null)
+            blocks.close();
     }
 
     /**
@@ -114,12 +130,27 @@ public class JEDirectory extends Directory {
 
     @Override
     public IndexOutput createOutput(String name) throws IOException {
+	if (!transactionInProgress())
+	    beginTransaction();
+
         return new JEIndexOutput(this, name, true);
     }
 
     @Override
     public void deleteFile(String name) throws IOException {
-        new File(name).delete(this);
+	if (!transactionInProgress()){
+	    try {
+		beginTransaction();
+		new File(name).delete(this);
+		commitTransaction();
+	    }
+	    catch(Exception e)
+		{
+		    abortTransaction();
+		}
+	}
+	else
+	    new File(name).delete(this);
     }
 
     @Override
@@ -221,5 +252,82 @@ public class JEDirectory extends Directory {
      */
     public void setTransaction(Transaction txn) {
         this.txn = txn;
+    }
+
+    public JEDirectory(Environment env, DatabaseConfig dbConfig) throws DatabaseException, IOException
+    {
+	this.env = env;
+
+	try {
+	    beginTransaction();
+	    this.files = env.openDatabase(txn, "__index__", dbConfig);
+	    this.blocks = env.openDatabase(txn, "__blocks__", dbConfig);
+	} 
+	catch (DatabaseException e) {
+	    abortTransaction();
+	    this.files = null;
+	    this.blocks = null;
+	    throw e;
+	} 
+	finally {
+	    commitTransaction();
+	}
+    }
+
+    
+    public void beginTransaction() throws IOException{
+	if (txn != null){
+	    System.err.println("WARNING: JEDirectory.beginTransaction -- transaction already open.  Aborting it!");
+	    
+	    abortTransaction();
+	}
+	try {
+	    txn = env.beginTransaction(null, null);
+	}
+	catch(DatabaseException e){
+	    throw new IOException(e);
+	}
+    }
+    public void commitTransaction() throws IOException{
+	
+	if (txn != null)
+	    {
+		try {
+		    txn.commit();
+		}
+		catch(DatabaseException e){
+		    txn = null;
+		    throw new IOException(e);
+		}
+		txn = null;
+	    }
+    }
+    public void abortTransaction() throws IOException{
+	if (txn != null)
+	    try {
+		txn.abort();
+	    }
+	    catch(DatabaseException e){
+		txn = null;
+		throw new IOException(e);
+	    }
+	
+	txn = null;
+    }
+    public boolean transactionInProgress(){
+	return txn != null;
+    }
+    public boolean good(){
+	return this.env != null && this.files != null && this.blocks != null;
+    }
+    public Database getIndex(){
+	return files;
+    }
+    public Database getBlocks(){
+	return blocks;
+    }
+    public Environment getEnvironment()
+    {
+	return env;
     }
 }
