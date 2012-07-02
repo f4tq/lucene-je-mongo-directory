@@ -68,8 +68,6 @@ public class JEIndexOutput extends IndexOutput {
         file.modify(directory, length, System.currentTimeMillis());
 
         directory.openFiles.remove(this);
-	
-	directory.commitTransaction();
     }
 
     @Override

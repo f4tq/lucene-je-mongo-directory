@@ -1,0 +1,37 @@
+This project targets lucene's JEDirectory with changes for use with modeshape.  As of this writing modeshape-2.8.1.
+
+You may, of course, find use for other projects.  If you use it as intended by the original authors, it will work as expected i.e. you externally manage transaction and the environment.  org.apache.lucene.store.je is a mirror copy of the original last found in lucene 3.1
+
+The base for this project was found here:
+
+http://svn.apache.org/repos/asf/lucene/dev/branches/lucene_solr_3_1/lucene/contrib/db/bdb-je
+
+Apache dropped Berkeley DB after lucene 3.1.  I can see that IVY makes maintaining an external project which probably accounts for it missing in later versions of lucene.  That, however, does not diminish the usefulness of Berkeley DB indexes!
+
+My motivation for resurrecting JEDirectory back up to lucene 3.6, which one of the versions I tested against, was because modeshape lucene indexes are based on a system that no one but modeshape uses which is fine I guess.  However, I wanted to dump/restore the indexes like I dump my infinispan/bdb-je data for backups and restore to new cluster nodes.  
+
+Like so:
+
+da=`date +%Y-%m-%d`; for i in `cat /datastore/je-dumps/dblist.txt`; do dumpdir=/datastore/je-dumps/$(hostname -s)/$da; mkdir -p $dumpdir; java -jar /opt/jboss/server/modeshape/lib/je-4.0.92.jar DbDump -s $i -h /datastore/modeshape/shared-prod/$(hostname -s) > $dumpdir/$i.dmp; done
+
+Berkeley DB is also very fast and can accomodate very large indexes.  I realize that modeshape 3 is moving to towards a infinispan based lucene directory, but from the looks of the 2.8.xx modehape-search-lucene code, it needs a major overhaul and I need this now.
+
+I did manage to integrate this particular version, somewhat into lucene's ivy based project build, but it was a nightmare when compared to maven.  Sorry, just my experience.
+
+So I made a maven project of just the bdb-je bit from lucene 3.1. And brought it forward.  The tests work for lucene 3.4 and 3.6.
+
+Summary of the changes from JEDirectory for modeshape:
+
+- Facilitate minimal changes to modeshape.
+  + In the absense of a transaction, create one before doing something that will doubtless fail without one such as:
+	o Delete a file
+        o Create a file (IndexOutput)
+  + Provide methods for begin,abort, commit transactions that use the Environment passed on creation
+- Avoid any changes to the origin JEDirectory.  I think I accomplished this
+- Pass Environment, DatabaseConfig to JEMongoDirectory.
+
+This project is can be found on github.  Same license as before.  The modeshape tests really torture this implementation.
+
+
+Chris Fortescue <f4tq AT yahoo DOT com>
+

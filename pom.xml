@@ -8,10 +8,10 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.apache.lucene</groupId>
+  <groupId>net.mongonet.lucene</groupId>
   <artifactId>bdb-je</artifactId>
   <packaging>jar</packaging>
-  <version>3.4.1</version>
+  <version>1.0.0</version>
   <properties>
 	<lucene.version>3.4.0</lucene.version>
 	<sleepycat.version>4.0.92</sleepycat.version>

@@ -1,4 +1,4 @@
-package org.apache.lucene.store.je;
+package net.mongonet.lucene.store.je;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -42,12 +42,12 @@ import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 
 /**
- * Tests {@link JEDirectory}.
+ * Tests {@link JEMongoDirectory}.
  * 
  * Adapted from Andi Vajda's org.apache.lucene.db.DbStoreTest.
  *
  */
-public class JEStoreTest extends LuceneTestCase {
+public class JEMongoStoreTest extends LuceneTestCase {
     protected File dbHome = new File(TEMP_DIR,"index");
 
     protected Environment env;
@@ -113,12 +113,12 @@ public class JEStoreTest extends LuceneTestCase {
         Date veryStart = new Date();
         Date start = new Date();
 
-        JEDirectory store = null;
+        JEMongoDirectory store = null;
 
         if (VERBOSE) System.out.println("Writing files byte by byte");
 
         try {
-            store = new JEDirectory(env,dbConfig);
+            store = new JEMongoDirectory(env,dbConfig);
 	    store.beginTransaction();
 
             for (int i = 0; i < count; i++) {
@@ -155,7 +155,7 @@ public class JEStoreTest extends LuceneTestCase {
 
         try {
          
-            store = new JEDirectory(env,dbConfig);
+            store = new JEMongoDirectory(env,dbConfig);
 	    store.beginTransaction();
 
             gen = new Random(seed);
@@ -200,7 +200,7 @@ public class JEStoreTest extends LuceneTestCase {
         }
 
         try {
-            store = new JEDirectory(env,dbConfig);
+            store = new JEMongoDirectory(env,dbConfig);
 	    store.beginTransaction();
 
             gen = new Random(seed);
@@ -247,12 +247,12 @@ public class JEStoreTest extends LuceneTestCase {
         Date veryStart = new Date();
         Date start = new Date();
 
-        JEDirectory store = null;
+        JEMongoDirectory store = null;
 
         if (VERBOSE) System.out.println("Writing files byte by byte");
 
         try {
-            store = new JEDirectory(env,dbConfig);
+            store = new JEMongoDirectory(env,dbConfig);
 	    store.beginTransaction();
             for (int i = 0; i < count; i++) {
 		String name = i + ".dat";
@@ -288,7 +288,7 @@ public class JEStoreTest extends LuceneTestCase {
 
         try {
 
-            store = new JEDirectory(env,dbConfig);
+            store = new JEMongoDirectory(env,dbConfig);
 	    store.beginTransaction();
 
             gen = new Random(seed);
@@ -325,7 +325,7 @@ public class JEStoreTest extends LuceneTestCase {
         }
 
         try {
-            store = new JEDirectory(env,dbConfig);
+            store = new JEMongoDirectory(env,dbConfig);
 	    store.beginTransaction();
 
             gen = new Random(seed);
@@ -376,7 +376,7 @@ public class JEStoreTest extends LuceneTestCase {
         }
 
         try {
-            store = new JEDirectory(env,dbConfig);
+            store = new JEMongoDirectory(env,dbConfig);
 	    store.beginTransaction();
 
             gen = new Random(seed);
@@ -412,7 +412,7 @@ public class JEStoreTest extends LuceneTestCase {
 
         Cursor cursor = null;
         try {
-            store = new JEDirectory(env,dbConfig);
+            store = new JEMongoDirectory(env,dbConfig);
 
 	    try {
 		cursor = store.getIndex().openCursor(null, null);
@@ -467,12 +467,12 @@ public class JEStoreTest extends LuceneTestCase {
         Date veryStart = new Date();
         Date start = new Date();
 
-        JEDirectory store = null;
+        JEMongoDirectory store = null;
 
         if (VERBOSE) System.out.println("Writing files as one byte array");
 
         try {
-            store = new JEDirectory(env,dbConfig);
+            store = new JEMongoDirectory(env,dbConfig);
 	    store.beginTransaction();
 
             for (int i = 0; i < count; i++) {
@@ -509,7 +509,7 @@ public class JEStoreTest extends LuceneTestCase {
 
         try {
 
-            store = new JEDirectory(env,dbConfig);
+            store = new JEMongoDirectory(env,dbConfig);
 	    store.beginTransaction();
 
             gen = new Random(seed);
@@ -556,7 +556,7 @@ public class JEStoreTest extends LuceneTestCase {
 
         try {
 
-            store = new JEDirectory(env,dbConfig);
+            store = new JEMongoDirectory(env,dbConfig);
 	    store.beginTransaction();
 
             gen = new Random(seed);
