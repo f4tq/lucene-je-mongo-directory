@@ -8,10 +8,32 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>net.mongonet.lucene</groupId>
-  <artifactId>bdb-je</artifactId>
+  <name>JEMongoDirectory</name>
+  <groupId>net.mongonet.lucene.store.je</groupId>
+  <artifactId>je-mongo-directory</artifactId>
   <packaging>jar</packaging>
   <version>1.0.0</version>
+  <description>Refinement of JEDirectory for ease of use when embedding in complicated source such as modeshape</description>
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <scm>
+    <url>https://github.com/f4tq/lucene-je-mongo-directory.git</url>
+    <connection>https://github.com/f4tq/lucene-je-mongo-directory.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <id>f4tq</id>
+      <name>Chris F4tq</name>
+      <email>f4tq AT yahoo DOT com</email>
+    </developer>
+  </developers>
+
+
   <properties>
 	<lucene.version>3.4.0</lucene.version>
 	<sleepycat.version>4.0.92</sleepycat.version>
